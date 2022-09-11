@@ -37,6 +37,7 @@ class BCBuildMojo : AbstractMojo() {
 
             //Replace templates
             val text = sourceFile.readText()
+                .replace("\$BCInfo", "BCInfo")
                 .replace("%%version-major%%", versionMajor)
                 .replace("%%version-minor%%", versionMinor)
                 .replace("%%version-revision%%", versionRevision)
