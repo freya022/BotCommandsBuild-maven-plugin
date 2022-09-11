@@ -40,8 +40,8 @@ class BCBuildMojo : AbstractMojo() {
                 .replace("%%version-major%%", versionMajor)
                 .replace("%%version-minor%%", versionMinor)
                 .replace("%%version-revision%%", versionRevision)
-                .replace("%%commit-hash%%", commitHash.take(10))
-                .replace("%%branch-name%%", branchName)
+                .replace("%%commit-hash%%", commitHash?.take(10).toString())
+                .replace("%%branch-name%%", branchName.toString())
                 .replace("%%build-jda-version%%", jdaDependency.version)
                 .replace("%%build-time%%", System.currentTimeMillis().toString())
 
@@ -63,38 +63,48 @@ class BCBuildMojo : AbstractMojo() {
         .dependencies
         .find { it.artifactId == "JDA" }
 
-    private fun getCommitHash() = let {
-        val jitpackCommit = System.getenv("GIT_COMMIT")
-        if (jitpackCommit != null) return@let jitpackCommit
+    private fun getCommitHash(): String? {
+        try {
+            val jitpackCommit = System.getenv("GIT_COMMIT")
+            if (jitpackCommit != null) return jitpackCommit
 
-        return@let ProcessBuilder()
-            .directory(project.basedir) //Working directory differs when maven build server is used
-            .redirectError(ProcessBuilder.Redirect.INHERIT)
-            .command("git", "rev-parse", "--verify", "HEAD")
-            .start()
-            .also {
-                if (it.waitFor() != 0) {
-                    throw IOException("Unable to get commit hash via Git")
+            return ProcessBuilder()
+                .directory(project.basedir) //Working directory differs when maven build server is used
+                .redirectError(ProcessBuilder.Redirect.INHERIT)
+                .command("git", "rev-parse", "--verify", "HEAD")
+                .start()
+                .also {
+                    if (it.waitFor() != 0) {
+                        throw IOException("Unable to get commit hash via Git")
+                    }
                 }
-            }
-            .inputStream.bufferedReader().use { it.readLine() }
+                .inputStream.bufferedReader().use { it.readLine() }
+        } catch (e: Exception) {
+            log.error("Unable to get commit hash", e)
+            return null
+        }
     }
 
-    private fun getCommitBranch() = let {
-        val jitpackBranch = System.getenv("GIT_BRANCH")
-        if (jitpackBranch != null) return@let jitpackBranch
+    private fun getCommitBranch(): String? {
+        try {
+            val jitpackBranch = System.getenv("GIT_BRANCH")
+            if (jitpackBranch != null) return jitpackBranch
 
-        return@let ProcessBuilder()
-            .directory(project.basedir) //Working directory differs when maven build server is used
-            .redirectError(ProcessBuilder.Redirect.INHERIT)
-            .command("git", "rev-parse", "--abbrev-ref", "HEAD")
-            .start()
-            .also {
-                if (it.waitFor() != 0) {
-                    throw IOException("Unable to get branch name via Git")
+            return ProcessBuilder()
+                .directory(project.basedir) //Working directory differs when maven build server is used
+                .redirectError(ProcessBuilder.Redirect.INHERIT)
+                .command("git", "rev-parse", "--abbrev-ref", "HEAD")
+                .start()
+                .also {
+                    if (it.waitFor() != 0) {
+                        throw IOException("Unable to get branch name via Git")
+                    }
                 }
-            }
-            .inputStream.bufferedReader().use { it.readLine() }
+                .inputStream.bufferedReader().use { it.readLine() }
+        } catch (e: Exception) {
+            log.error("Unable to get commit branch", e)
+            return null
+        }
     }
 
     private fun findSourceFile() = project
