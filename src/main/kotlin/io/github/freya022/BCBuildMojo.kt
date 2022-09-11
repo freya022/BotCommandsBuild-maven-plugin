@@ -1,6 +1,5 @@
 package io.github.freya022
 
-import org.apache.maven.model.Resource
 import org.apache.maven.plugin.AbstractMojo
 import org.apache.maven.plugin.MojoFailureException
 import org.apache.maven.plugins.annotations.LifecyclePhase
@@ -14,8 +13,8 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import kotlin.io.path.*
 
-@Mojo(name = "BotCommandsBuild", defaultPhase = LifecyclePhase.GENERATE_RESOURCES)
-class EnforcerMojo : AbstractMojo() {
+@Mojo(name = "BotCommandsBuild", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
+class BCBuildMojo : AbstractMojo() {
     @Parameter(defaultValue = "\${project}", required = true, readonly = true)
     lateinit var project: MavenProject
 
@@ -27,29 +26,34 @@ class EnforcerMojo : AbstractMojo() {
                 readln()
             }
 
-            val propertiesFile = findPropertiesFile()
+            val sourceFile = findSourceFile()
+            log.info("Reading BCInfo template from ${sourceFile.absolute()}")
 
-            val versionSplit = project.version.substringBefore("-SNAPSHOT").split(".")
+            //Get info to be inserted
+            val (versionMajor, versionMinor, versionRevision) = project.version.substringBefore("-SNAPSHOT").split(".")
             val jdaDependency = getJDADependency() ?: throw IllegalStateException("Unable to find JDA dependency")
-
             val commitHash = getCommitHash()
             val branchName = getCommitBranch()
 
-            val text = propertiesFile.readText()
-                .replace("%%version-major%%", versionSplit[0])
-                .replace("%%version-minor%%", versionSplit[1])
-                .replace("%%version-revision%%", versionSplit[2])
+            //Replace templates
+            val text = sourceFile.readText()
+                .replace("%%version-major%%", versionMajor)
+                .replace("%%version-minor%%", versionMinor)
+                .replace("%%version-revision%%", versionRevision)
                 .replace("%%commit-hash%%", commitHash)
                 .replace("%%branch-name%%", branchName)
                 .replace("%%build-jda-version%%", jdaDependency.version)
                 .replace("%%build-time%%", System.currentTimeMillis().toString())
 
-            val generatedDir = project.basedir.toPath().resolve("src").resolve("generated")
-            val newPropertiesFile = generatedDir.resolve("BotCommands.properties")
-            project.addResource(generatedDir.toResource())
+            //Put files in target/generated-sources
+            val generatedDir = Path(project.build.directory).resolve("generated-sources")
+            val newSourceFile = generatedDir.resolveInfoFile()
 
-            generatedDir.createDirectories()
-            newPropertiesFile.writeText(text, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
+            //Write to new file, create parent structure
+            newSourceFile.parent.createDirectories()
+            newSourceFile.writeText(text, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
+
+            log.info("Wrote BCInfo to ${newSourceFile.absolute()}")
         } catch (e: Exception) {
             throw MojoFailureException("Failed to preprocess BotCommands sources", e)
         }
@@ -64,6 +68,7 @@ class EnforcerMojo : AbstractMojo() {
         if (jitpackCommit != null) return@let jitpackCommit
 
         return@let ProcessBuilder()
+            .directory(project.basedir) //Working directory differs when maven build server is used
             .redirectError(ProcessBuilder.Redirect.INHERIT)
             .command("git", "rev-parse", "--verify", "HEAD")
             .start()
@@ -80,6 +85,7 @@ class EnforcerMojo : AbstractMojo() {
         if (jitpackBranch != null) return@let jitpackBranch
 
         return@let ProcessBuilder()
+            .directory(project.basedir) //Working directory differs when maven build server is used
             .redirectError(ProcessBuilder.Redirect.INHERIT)
             .command("git", "rev-parse", "--abbrev-ref", "HEAD")
             .start()
@@ -91,18 +97,11 @@ class EnforcerMojo : AbstractMojo() {
             .inputStream.bufferedReader().use { it.readLine() }
     }
 
-    private fun findPropertiesFile() = project
-        .resources
-        .find {
-            Path(it.directory).resolve("BotCommands.properties").exists().also { exists ->
-                if (exists) {
-                    it.addExclude("BotCommands.properties") //Prevent compiler from adding the template resource
-                }
-            }
-        }
-        ?.let {
-            Path(it.directory).resolve("BotCommands.properties")
-        } ?: throw IOException("Cannot find BotCommands.properties in ${project.resources.joinToString { it.directory }}")
+    private fun findSourceFile() = project
+        .compileSourceRoots
+        .find { Path(it).resolveInfoFile().resolveSibling("BCInfo.java.template").exists() }
+        ?.let { Path(it).resolveInfoFile().resolveSibling("BCInfo.java.template") }
+        ?: throw IOException("Cannot find BotCommands.properties in ${project.resources.joinToString { it.directory }}")
 
-    private fun Path.toResource() = Resource().also { it.directory = toString() }
+    private fun Path.resolveInfoFile() = resolve(Path("com", "freya02", "botcommands", "api", "BCInfo.java"))
 }
