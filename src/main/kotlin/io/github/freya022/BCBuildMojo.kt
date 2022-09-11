@@ -40,7 +40,7 @@ class BCBuildMojo : AbstractMojo() {
                 .replace("%%version-major%%", versionMajor)
                 .replace("%%version-minor%%", versionMinor)
                 .replace("%%version-revision%%", versionRevision)
-                .replace("%%commit-hash%%", commitHash)
+                .replace("%%commit-hash%%", commitHash.take(10))
                 .replace("%%branch-name%%", branchName)
                 .replace("%%build-jda-version%%", jdaDependency.version)
                 .replace("%%build-time%%", System.currentTimeMillis().toString())
