@@ -18,6 +18,12 @@ class BCBuildMojo : AbstractMojo() {
     @Parameter(defaultValue = "\${project}", required = true, readonly = true)
     lateinit var project: MavenProject
 
+    private val buildDirectoryPath
+        get() = Path(project.build.directory)
+
+    private val generatedSourcesPath: Path
+        get() = buildDirectoryPath.resolve("generated-sources")
+
     @Throws(MojoFailureException::class)
     override fun execute() {
         try {
@@ -54,10 +60,8 @@ class BCBuildMojo : AbstractMojo() {
                 }
             }.replace("\$BCInfo", "BCInfo")
 
-
             //Put files in target/generated-sources
-            val generatedDir = Path(project.build.directory).resolve("generated-sources")
-            val newSourceFile = generatedDir.resolveInfoFile()
+            val newSourceFile = generatedSourcesPath.resolveInfoFile()
 
             //Write to new file, create parent structure
             newSourceFile.parent.createDirectories()
