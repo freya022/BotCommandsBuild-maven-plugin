@@ -35,17 +35,25 @@ class BCBuildMojo : AbstractMojo() {
             val commitHash = getCommitHash()
             val branchName = getCommitBranch()
 
+            val properties = listOf(
+                BCInfoProperty("version-major", "Major version", versionMajor),
+                BCInfoProperty("version-minor", "Minor version", versionMinor),
+                BCInfoProperty("version-revision", "Version revision", versionRevision),
+                BCInfoProperty("version-classifier", "Version classifier", versionClassifier),
+                BCInfoProperty("commit-hash", "Commit hash", commitHash?.take(10).toString()),
+                BCInfoProperty("branch-name", "Branch name", branchName.toString()),
+                BCInfoProperty("build-jda-version", "JDA version used to build", jdaDependency.version),
+                BCInfoProperty("build-time", "Build timestamp", System.currentTimeMillis().toString())
+            )
+
             //Replace templates
-            val text = sourceFile.readText()
-                .replace("\$BCInfo", "BCInfo")
-                .replace("%%version-major%%", versionMajor)
-                .replace("%%version-minor%%", versionMinor)
-                .replace("%%version-revision%%", versionRevision)
-                .replace("%%version-classifier%%", versionClassifier)
-                .replace("%%commit-hash%%", commitHash?.take(10).toString())
-                .replace("%%branch-name%%", branchName.toString())
-                .replace("%%build-jda-version%%", jdaDependency.version)
-                .replace("%%build-time%%", System.currentTimeMillis().toString())
+            val text = properties.fold(sourceFile.readText()) { str, (name, _, value) ->
+                str.replace("%%$name%%", value).also { newStr ->
+                    if (newStr == str)
+                        log.warn("Could not replace any occurrence of property named '$name' with value '$value'")
+                }
+            }.replace("\$BCInfo", "BCInfo")
+
 
             //Put files in target/generated-sources
             val generatedDir = Path(project.build.directory).resolve("generated-sources")
@@ -61,6 +69,7 @@ class BCBuildMojo : AbstractMojo() {
             )
 
             log.info("Wrote BCInfo to ${newSourceFile.absolute()}")
+            properties.forEach { (_, propertyHumanName, value) -> log.info("\t$propertyHumanName: $value") }
         } catch (e: Exception) {
             throw MojoFailureException("Failed to preprocess BotCommands sources", e)
         }
@@ -129,6 +138,8 @@ class BCBuildMojo : AbstractMojo() {
         ?: throw IOException("Cannot find BotCommands.properties in ${project.resources.joinToString { it.directory }}")
 
     private fun Path.resolveInfoFile() = resolve(Path("com", "freya02", "botcommands", "api", "BCInfo.java"))
+
+    private data class BCInfoProperty(val propertyName: String, val propertyHumanName: String, val propertyValue: String)
 
     companion object {
         private val versionPattern = Regex("""(\d+)\.(\d+)\.(\d+)-(\w+\.\d+)(?:-SNAPSHOT)?""")
