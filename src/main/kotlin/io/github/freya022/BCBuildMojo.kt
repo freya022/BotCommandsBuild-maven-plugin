@@ -139,9 +139,10 @@ class BCBuildMojo : AbstractMojo() {
 
     private fun findSourceFile() = project
         .compileSourceRoots
-        .find { Path(it).resolveInfoFile().resolveSibling("\$BCInfo.java").exists() }
-        ?.let { Path(it).resolveInfoFile().resolveSibling("\$BCInfo.java") }
-        ?: throw IOException("Cannot find BotCommands.properties in ${project.resources.joinToString { it.directory }}")
+        .asSequence()
+        .map { Path(it).resolveInfoFile().resolveSibling("\$BCInfo.java") }
+        .find { it.exists() }
+        ?: throw IOException("Cannot find BotCommands.properties in ${project.compileSourceRoots.joinToString()}")
 
     private fun Path.resolveInfoFile() = resolve(Path("com", "freya02", "botcommands", "api", "BCInfo.java"))
 
