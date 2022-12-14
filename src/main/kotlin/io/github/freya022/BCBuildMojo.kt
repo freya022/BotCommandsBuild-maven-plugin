@@ -30,7 +30,8 @@ class BCBuildMojo : AbstractMojo() {
             log.info("Reading BCInfo template from ${sourceFile.absolute()}")
 
             //Get info to be inserted
-            val (versionMajor, versionMinor, versionRevision) = project.version.substringBefore("-SNAPSHOT").split(".")
+            val (_, versionMajor, versionMinor, versionRevision, versionClassifier) =
+                versionPattern.find(project.version)!!.groupValues
             val jdaDependency = getJDADependency() ?: throw IllegalStateException("Unable to find JDA dependency")
             val commitHash = getCommitHash()
             val branchName = getCommitBranch()
@@ -41,6 +42,7 @@ class BCBuildMojo : AbstractMojo() {
                 .replace("%%version-major%%", versionMajor)
                 .replace("%%version-minor%%", versionMinor)
                 .replace("%%version-revision%%", versionRevision)
+                .replace("%%version-classifier%%", versionClassifier)
                 .replace("%%commit-hash%%", commitHash?.take(10).toString())
                 .replace("%%branch-name%%", branchName.toString())
                 .replace("%%build-jda-version%%", jdaDependency.version)
@@ -52,7 +54,12 @@ class BCBuildMojo : AbstractMojo() {
 
             //Write to new file, create parent structure
             newSourceFile.parent.createDirectories()
-            newSourceFile.writeText(text, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
+            newSourceFile.writeText(
+                text,
+                StandardCharsets.UTF_8,
+                StandardOpenOption.CREATE,
+                StandardOpenOption.TRUNCATE_EXISTING
+            )
 
             log.info("Wrote BCInfo to ${newSourceFile.absolute()}")
         } catch (e: Exception) {
@@ -115,4 +122,8 @@ class BCBuildMojo : AbstractMojo() {
         ?: throw IOException("Cannot find BotCommands.properties in ${project.resources.joinToString { it.directory }}")
 
     private fun Path.resolveInfoFile() = resolve(Path("com", "freya02", "botcommands", "api", "BCInfo.java"))
+
+    companion object {
+        private val versionPattern = Regex("""(\d+)\.(\d+)\.(\d+)-(\w+\.\d+)(?:-SNAPSHOT)?""")
+    }
 }
