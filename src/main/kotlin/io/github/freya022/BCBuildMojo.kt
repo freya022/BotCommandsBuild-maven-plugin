@@ -30,8 +30,7 @@ class BCBuildMojo : AbstractMojo() {
             log.info("Reading BCInfo template from ${sourceFile.absolute()}")
 
             //Get info to be inserted
-            val (_, versionMajor, versionMinor, versionRevision, versionClassifier) =
-                versionPattern.find(project.version)!!.groupValues
+            val (_, versionMajor, versionMinor, versionRevision, versionClassifier) = getVersionValues()
             val jdaDependency = getJDADependency() ?: throw IllegalStateException("Unable to find JDA dependency")
             val commitHash = getCommitHash()
             val branchName = getCommitBranch()
@@ -65,6 +64,14 @@ class BCBuildMojo : AbstractMojo() {
         } catch (e: Exception) {
             throw MojoFailureException("Failed to preprocess BotCommands sources", e)
         }
+    }
+
+    private fun getVersionValues(): List<String> {
+        return versionPattern.find(project.version)?.groupValues ?: throw MojoFailureException(
+            this,
+            "Failed to parse project version",
+            "Failed to parse project version: '${project.version}'"
+        )
     }
 
     private fun getJDADependency() = project
