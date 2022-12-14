@@ -100,6 +100,7 @@ class BCBuildMojo : AbstractMojo() {
                 .directory(project.basedir) //Working directory differs when maven build server is used
                 .redirectError(ProcessBuilder.Redirect.INHERIT)
                 .command("git", "rev-parse", "--verify", "HEAD")
+                .also { log.debug("Running process: ${it.command()}") }
                 .start()
                 .also {
                     if (it.waitFor() != 0) {
@@ -122,6 +123,7 @@ class BCBuildMojo : AbstractMojo() {
                 .directory(project.basedir) //Working directory differs when maven build server is used
                 .redirectError(ProcessBuilder.Redirect.INHERIT)
                 .command("git", "rev-parse", "--abbrev-ref", "HEAD")
+                .also { log.debug("Running process: ${it.command()}") }
                 .start()
                 .also {
                     if (it.waitFor() != 0) {
