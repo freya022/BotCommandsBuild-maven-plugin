@@ -32,6 +32,8 @@ class BCBuildMojo : AbstractMojo() {
                 readln()
             }
 
+            detectJitpack()
+
             val sourceFile = findSourceFile()
             log.info("Reading BCInfo template from ${sourceFile.absolute()}")
 
@@ -76,6 +78,15 @@ class BCBuildMojo : AbstractMojo() {
             properties.forEach { (_, propertyHumanName, value) -> log.info("\t$propertyHumanName: $value") }
         } catch (e: Exception) {
             throw MojoFailureException("Failed to preprocess BotCommands sources", e)
+        }
+    }
+
+    private fun detectJitpack() {
+        if (System.getenv("JITPACK") == null) return
+
+        log.info("Detected Jitpack build")
+        listOf("JAVA_HOME", "GIT_COMMIT", "GIT_BRANCH", "GIT_DESCRIBE").forEach {
+            log.info("$it: ${System.getenv(it)}")
         }
     }
 
