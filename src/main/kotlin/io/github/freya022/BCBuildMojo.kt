@@ -127,8 +127,8 @@ class BCBuildMojo : AbstractMojo() {
 
     private fun getCommitBranch(): String? {
         try {
-            val jitpackBranch = System.getenv("GIT_BRANCH")
-            if (jitpackBranch != null) return jitpackBranch
+//            val jitpackBranch = System.getenv("GIT_BRANCH")
+//            if (jitpackBranch != null) return jitpackBranch
 
             return ProcessBuilder()
                 .directory(project.basedir) //Working directory differs when maven build server is used
