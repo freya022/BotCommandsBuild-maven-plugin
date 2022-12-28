@@ -127,8 +127,10 @@ class BCBuildMojo : AbstractMojo() {
 
     private fun getCommitBranch(): String? {
         try {
-//            val jitpackBranch = System.getenv("GIT_BRANCH")
-//            if (jitpackBranch != null) return jitpackBranch
+            //Jitpack builds are detached from a branch, this will return the HEAD hash,
+            // which can still be used on GitHub to get the state of the repository at that point
+            val jitpackBranch = System.getenv("GIT_BRANCH")
+            if (jitpackBranch != null) return jitpackBranch
 
             return ProcessBuilder()
                 .directory(project.basedir) //Working directory differs when maven build server is used
