@@ -13,8 +13,8 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import kotlin.io.path.*
 
-@Mojo(name = "BotCommandsBuild", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
-class BCBuildMojo : AbstractMojo() {
+@Mojo(name = "generate-version-info", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
+class GenerateVersionInfoMojo : AbstractMojo() {
     @Parameter(defaultValue = "\${project}", required = true, readonly = true)
     lateinit var project: MavenProject
 
