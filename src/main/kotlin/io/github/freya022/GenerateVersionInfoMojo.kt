@@ -38,7 +38,7 @@ class GenerateVersionInfoMojo : AbstractMojo() {
             log.info("Reading BCInfo template from ${sourceFile.absolute()}")
 
             //Get info to be inserted
-            val (_, versionMajor, versionMinor, versionRevision, versionClassifier) = getVersionValues()
+            val (versionMajor, versionMinor, versionRevision, versionClassifier) = getVersionValues()
             val jdaDependency = getJDADependency() ?: throw IllegalStateException("Unable to find JDA dependency")
             val commitHash = getCommitHash()
             val branchName = getCommitBranch()
@@ -56,9 +56,12 @@ class GenerateVersionInfoMojo : AbstractMojo() {
 
             //Replace templates
             val text = properties.fold(sourceFile.readText()) { str, (name, _, value) ->
-                str.replace("%%$name%%", value).also { newStr ->
-                    if (newStr == str)
-                        log.warn("Could not replace any occurrence of property named '$name' with value '$value'")
+                when (value) {
+                    null -> str.replace(""""%%$name%%"""", "null")
+                    else -> str.replace("%%$name%%", value).also { newStr ->
+                        if (newStr == str)
+                            log.warn("Could not replace any occurrence of property named '$name' with value '$value'")
+                    }
                 }
             }.replace("\$BCInfo", "BCInfo")
 
@@ -90,8 +93,8 @@ class GenerateVersionInfoMojo : AbstractMojo() {
         }
     }
 
-    private fun getVersionValues(): List<String> {
-        return versionPattern.matchEntire(project.version)?.groupValues ?: throw MojoFailureException(
+    private fun getVersionValues(): Version {
+        return Version.parseOrNull(project.version) ?: throw MojoFailureException(
             this,
             "Failed to parse project version",
             "Failed to parse project version: '${project.version}'"
@@ -159,9 +162,5 @@ class GenerateVersionInfoMojo : AbstractMojo() {
 
     private fun Path.resolveInfoFile() = resolve(Path("com", "freya02", "botcommands", "api", "BCInfo.java"))
 
-    private data class BCInfoProperty(val propertyName: String, val propertyHumanName: String, val propertyValue: String)
-
-    companion object {
-        private val versionPattern = Regex("""(\d+)\.(\d+)\.(\d+)(?:-(\w+\.\d+))?(?:_DEV)?""")
-    }
+    private data class BCInfoProperty(val propertyName: String, val propertyHumanName: String, val propertyValue: String?)
 }
