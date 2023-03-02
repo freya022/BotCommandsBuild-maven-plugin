@@ -91,7 +91,7 @@ class GenerateVersionInfoMojo : AbstractMojo() {
     }
 
     private fun getVersionValues(): List<String> {
-        return versionPattern.find(project.version)?.groupValues ?: throw MojoFailureException(
+        return versionPattern.matchEntire(project.version)?.groupValues ?: throw MojoFailureException(
             this,
             "Failed to parse project version",
             "Failed to parse project version: '${project.version}'"
@@ -162,6 +162,6 @@ class GenerateVersionInfoMojo : AbstractMojo() {
     private data class BCInfoProperty(val propertyName: String, val propertyHumanName: String, val propertyValue: String)
 
     companion object {
-        private val versionPattern = Regex("""(\d+)\.(\d+)\.(\d+)-(\w+\.\d+)(?:-SNAPSHOT)?""")
+        private val versionPattern = Regex("""(\d+)\.(\d+)\.(\d+)-(\w+\.\d+)(?:-SNAPSHOT|_DEV)?""")
     }
 }
