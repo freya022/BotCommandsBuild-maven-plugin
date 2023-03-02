@@ -4,7 +4,7 @@
 
     <groupId>io.github.freya022</groupId>
     <artifactId>BotCommandsBuild-maven-plugin</artifactId>
-    <version>master-SNAPSHOT</version> <!-- Jitpack moment -->
+    <version>master-SNAPSHOT</version> <!-- Jitpack moment, could be fixed by matching the version using a pattern in jitpack.yml -->
     <packaging>maven-plugin</packaging>
 
     <properties>
