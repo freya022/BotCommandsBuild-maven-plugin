@@ -162,6 +162,6 @@ class GenerateVersionInfoMojo : AbstractMojo() {
     private data class BCInfoProperty(val propertyName: String, val propertyHumanName: String, val propertyValue: String)
 
     companion object {
-        private val versionPattern = Regex("""(\d+)\.(\d+)\.(\d+)-(\w+\.\d+)(?:-SNAPSHOT|_DEV)?""")
+        private val versionPattern = Regex("""(\d+)\.(\d+)\.(\d+)(?:-(\w+\.\d+))?(?:_DEV)?""")
     }
 }
