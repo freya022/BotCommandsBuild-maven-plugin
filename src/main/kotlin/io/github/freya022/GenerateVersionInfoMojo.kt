@@ -40,7 +40,7 @@ class GenerateVersionInfoMojo : AbstractMojo() {
             //Get info to be inserted
             val (versionMajor, versionMinor, versionRevision, versionClassifier) = getVersionValues()
             val jdaDependency = getJDADependency() ?: throw IllegalStateException("Unable to find JDA dependency")
-            val commitHash = getCommitHash()
+            val commitHash = getCommitHash(project)
             val branchName = getCommitBranch()
 
             val properties = listOf(
@@ -104,29 +104,6 @@ class GenerateVersionInfoMojo : AbstractMojo() {
     private fun getJDADependency() = project
         .dependencies
         .find { it.artifactId == "JDA" }
-
-    private fun getCommitHash(): String? {
-        try {
-            val jitpackCommit = System.getenv("GIT_COMMIT")
-            if (jitpackCommit != null) return jitpackCommit
-
-            return ProcessBuilder()
-                .directory(project.basedir) //Working directory differs when maven build server is used
-                .redirectError(ProcessBuilder.Redirect.INHERIT)
-                .command("git", "rev-parse", "--verify", "HEAD")
-                .also { log.debug("Running process: ${it.command()}") }
-                .start()
-                .also {
-                    if (it.waitFor() != 0) {
-                        throw IOException("Unable to get commit hash via Git")
-                    }
-                }
-                .inputStream.bufferedReader().use { it.readLine() }
-        } catch (e: Exception) {
-            log.error("Unable to get commit hash", e)
-            return null
-        }
-    }
 
     private fun getCommitBranch(): String? {
         try {
