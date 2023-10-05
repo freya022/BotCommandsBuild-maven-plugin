@@ -135,9 +135,9 @@ class GenerateVersionInfoMojo : AbstractMojo() {
         .asSequence()
         .map { Path(it).resolveInfoFile().resolveSibling("\$BCInfo.java") }
         .find { it.exists() }
-        ?: throw IOException("Cannot find BotCommands.properties in ${project.compileSourceRoots.joinToString()}")
+        ?: throw IOException("Cannot find \$BCInfo.java in ${project.compileSourceRoots.joinToString()}")
 
-    private fun Path.resolveInfoFile() = resolve(Path("com", "freya02", "botcommands", "api", "BCInfo.java"))
+    private fun Path.resolveInfoFile() = resolve(Path("io", "github", "freya022", "botcommands", "api", "BCInfo.java"))
 
     private data class BCInfoProperty(val propertyName: String, val propertyHumanName: String, val propertyValue: String?)
 }

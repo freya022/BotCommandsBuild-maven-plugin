@@ -4,7 +4,7 @@ import org.apache.maven.plugin.AbstractMojo
 import org.apache.maven.project.MavenProject
 import java.io.IOException
 
-// https://github.com/DV8FromTheWorld/JDA/blob/2328104e0117957ab498a0f3fcf2c281269b7bd9/build.gradle.kts#L44-L49
+// https://github.com/discord-jda/JDA/blob/2328104e0117957ab498a0f3fcf2c281269b7bd9/build.gradle.kts#L44-L49
 val isCI = (System.getProperty("BUILD_NUMBER") != null // Jenkins
         || System.getenv("BUILD_NUMBER") != null
         || System.getProperty("GIT_COMMIT") != null // Jitpack
