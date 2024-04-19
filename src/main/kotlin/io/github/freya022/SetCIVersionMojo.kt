@@ -6,6 +6,8 @@ import org.apache.maven.plugins.annotations.Mojo
 import org.apache.maven.plugins.annotations.Parameter
 import org.apache.maven.project.MavenProject
 
+private val tagRegex = Regex("<tag>.*?</tag>")
+
 @Mojo(name = "set-ci-version", requiresDirectInvocation = true)
 class SetCIVersionMojo : AbstractMojo() {
     @Parameter(defaultValue = "\${project}", required = true, readonly = true)
@@ -19,7 +21,13 @@ class SetCIVersionMojo : AbstractMojo() {
                 // Remove _DEV
                 .replaceFirst("_DEV</version>", "</version>")
                 // Put current commit hash in project.scm.tag
-                .replaceFirst("<tag>HEAD</tag>", "<tag>${commitHash ?: "HEAD"}</tag>")
+                .let {
+                    if (commitHash != null) {
+                        it.replaceFirst(tagRegex, "<tag>$commitHash</tag>")
+                    } else {
+                        it
+                    }
+                }
                 .let { project.file.writeText(it) }
 
             log.info("Removed DEV from project version and added commit hash $commitHash")
