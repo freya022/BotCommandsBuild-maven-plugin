@@ -1,30 +1,43 @@
 package io.github.freya022.processor
 
-import com.fasterxml.jackson.annotation.JsonInclude
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.devtools.ksp.getDeclaredFunctions
 import com.google.devtools.ksp.isConstructor
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.processing.SymbolProcessor
 import com.google.devtools.ksp.symbol.*
+import com.google.gson.GsonBuilder
 import io.github.freya022.processor.util.*
 import io.github.freya022.util.LogSupplier
 import io.github.freya022.util.tryAppendDot
 import org.apache.maven.plugin.logging.Log
 import java.nio.file.Path
-import kotlin.io.path.bufferedWriter
 import kotlin.io.path.createParentDirectories
+import kotlin.io.path.readText
+import kotlin.io.path.writeText
 
 private val configurationPropertiesName = AnnotationName("org.springframework.boot.context.properties", "ConfigurationProperties")
 private val configurationValueName = AnnotationName("io.github.freya022.botcommands.internal.core.config", "ConfigurationValue")
 private val deprecatedValueName = AnnotationName("io.github.freya022.botcommands.internal.core.config", "DeprecatedValue")
 
-class BCSpringMetadataSymbolProcessor(logSupplier: LogSupplier, private val writePath: Path) : SymbolProcessor {
+private val gson = GsonBuilder()
+    .setPrettyPrinting()
+    .disableHtmlEscaping()
+    .create()
+
+class BCSpringMetadataSymbolProcessor(logSupplier: LogSupplier, private val resourcesPath: Path, private val writePath: Path) : SymbolProcessor {
     private val log: Log by logSupplier
 
     private val configurableProperties: MutableSet<String> = hashSetOf()
     private val configuredProperties: MutableSet<String> = hashSetOf()
-    private val metadata = SpringMetadata()
+    private val metadata = SpringMetadata().apply {
+        val resourceMetadata = resourcesPath.resolve("META-INF").resolve("spring-configuration-metadata.json")
+            .readText()
+            .let { gson.fromJson(it, SpringMetadata::class.java) }
+
+        groups += resourceMetadata.groups
+        properties += resourceMetadata.properties
+        hints += resourceMetadata.hints
+    }
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
         resolver.getSymbolsWithAnnotation(configurationPropertiesName.name, inDepth = false)
@@ -49,12 +62,7 @@ class BCSpringMetadataSymbolProcessor(logSupplier: LogSupplier, private val writ
         }
 
         writePath.createParentDirectories()
-        writePath.bufferedWriter().use {
-            ObjectMapper()
-                .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-                .writerWithDefaultPrettyPrinter()
-                .writeValue(it, metadata)
-        }
+        writePath.writeText(gson.toJson(metadata))
     }
 
     /**

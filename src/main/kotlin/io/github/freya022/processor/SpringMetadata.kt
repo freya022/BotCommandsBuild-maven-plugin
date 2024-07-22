@@ -3,7 +3,7 @@ package io.github.freya022.processor
 class SpringMetadata(
     val groups: MutableList<GroupMetadata>,
     val properties: MutableList<PropertyMetadata>,
-    val hints: MutableList<Hint>,
+    val hints: MutableList<Map<String, *>>,
 ) {
     constructor() : this(arrayListOf(), arrayListOf(), arrayListOf())
 }
@@ -25,4 +25,3 @@ class PropertyMetadata(
         val replacement: String?,
     )
 }
-class Hint()

@@ -71,6 +71,7 @@ class GenerateConfigurationMetadataMojo : AbstractMojo() {
                 config,
                 listOf(BCSpringMetadataSymbolProcessorProvider(
                     LogSupplier(this),
+                    baseDir.toPath().resolve("src").resolve("main").resolve("resources"),
                     generatedSourcesPath.resolve("META-INF").resolve("additional-spring-configuration-metadata.json")
                 )),
                 KspGradleLogger(KspGradleLogger.LOGGING_LEVEL_INFO)

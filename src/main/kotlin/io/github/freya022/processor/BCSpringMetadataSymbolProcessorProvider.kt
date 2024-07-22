@@ -6,8 +6,8 @@ import com.google.devtools.ksp.processing.SymbolProcessorProvider
 import io.github.freya022.util.LogSupplier
 import java.nio.file.Path
 
-class BCSpringMetadataSymbolProcessorProvider(private val logSupplier: LogSupplier, private val writePath: Path) : SymbolProcessorProvider {
+class BCSpringMetadataSymbolProcessorProvider(private val logSupplier: LogSupplier, private val resourcesPath: Path, private val writePath: Path) : SymbolProcessorProvider {
     override fun create(environment: SymbolProcessorEnvironment): SymbolProcessor {
-        return BCSpringMetadataSymbolProcessor(logSupplier, writePath)
+        return BCSpringMetadataSymbolProcessor(logSupplier, resourcesPath, writePath)
     }
 }
