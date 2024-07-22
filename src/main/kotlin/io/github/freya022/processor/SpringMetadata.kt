@@ -25,3 +25,10 @@ class PropertyMetadata(
         val replacement: String?,
     )
 }
+class ClassReferenceHint private constructor(val name: String, val providers: List<Provider>) {
+    class Provider(val name: String, val parameters: Parameters) {
+        class Parameters(val target: String)
+    }
+
+    constructor(name: String, targetClass: String) : this(name, listOf(Provider("class-reference", Provider.Parameters(targetClass))))
+}

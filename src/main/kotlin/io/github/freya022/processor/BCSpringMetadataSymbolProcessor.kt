@@ -6,6 +6,7 @@ import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.processing.SymbolProcessor
 import com.google.devtools.ksp.symbol.*
 import com.google.gson.GsonBuilder
+import com.google.gson.reflect.TypeToken
 import io.github.freya022.processor.util.*
 import io.github.freya022.util.LogSupplier
 import io.github.freya022.util.tryAppendDot
@@ -23,6 +24,10 @@ private val gson = GsonBuilder()
     .setPrettyPrinting()
     .disableHtmlEscaping()
     .create()
+
+private val classPattern = Regex("java.lang.Class<(.+)>")
+private val collectionPattern = Regex("java\\.util\\.(?:Set|List)<(.+)>$")
+private val mapPattern = Regex("java\\.util\\.Map<(.+), (.+)>$")
 
 class BCSpringMetadataSymbolProcessor(logSupplier: LogSupplier, private val resourcesPath: Path, private val writePath: Path) : SymbolProcessor {
     private val log: Log by logSupplier
@@ -112,6 +117,8 @@ class BCSpringMetadataSymbolProcessor(logSupplier: LogSupplier, private val reso
             .getIfSet("type")
             ?: propertyDeclaration.type.resolveTypedQualifiedName(propertyDeclaration)
 
+        tryPutClassReferenceHint(path, typeStr)
+
         val deprecation = propertyDeclaration.findAnnotationOrNull(deprecatedValueName)?.let { deprecatedValueAnnotation ->
             val reason = deprecatedValueAnnotation.getOrDefault<String>("reason").tryAppendDot()
             val level = deprecatedValueAnnotation.getOrDefault<KSClassDeclaration>("level").simpleName.asString().lowercase()
@@ -126,6 +133,37 @@ class BCSpringMetadataSymbolProcessor(logSupplier: LogSupplier, private val reso
             sourceType = propertyDeclaration.canonicalName,
             deprecation = deprecation
         )
+    }
+
+    private fun tryPutClassReferenceHint(name: String, typeStr: String) {
+        fun ClassReferenceHint.toMap(): Map<String, *> {
+            return gson.fromJson(gson.toJson(this), object : TypeToken<Map<String, *>>() {})
+        }
+
+        classPattern.matchEntire(typeStr)?.let { matchResult ->
+            val classTypeStr = matchResult.groupValues[1]
+            if (classTypeStr == "?")
+                return
+
+            metadata.hints += ClassReferenceHint(name, classTypeStr).toMap()
+            return
+        }
+
+        collectionPattern.matchEntire(typeStr)?.let { matchResult ->
+            val elementTypeStr = matchResult.groupValues[1]
+            // May or may not be a class
+            tryPutClassReferenceHint(name, elementTypeStr)
+            return
+        }
+
+        mapPattern.matchEntire(typeStr)?.let { matchResult ->
+            val keyTypeStr = matchResult.groupValues[1]
+            val valueTypeStr = matchResult.groupValues[2]
+            // May or may not be a class
+            tryPutClassReferenceHint("$name.keys", keyTypeStr)
+            tryPutClassReferenceHint("$name.values", valueTypeStr)
+            return
+        }
     }
 
     private fun String.toJavaType() = when (this) {
