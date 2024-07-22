@@ -123,6 +123,7 @@ class BCSpringMetadataSymbolProcessor(logSupplier: LogSupplier, private val reso
         "kotlin.Int" -> "java.lang.Integer"
         "kotlin.Long" -> "java.lang.Long"
         "kotlin.Double" -> "java.lang.Double"
+        "kotlin.String" -> "java.lang.String"
         else -> {
             if (this.startsWith("kotlin."))
                 log.warn("Unmapped type: $this")
