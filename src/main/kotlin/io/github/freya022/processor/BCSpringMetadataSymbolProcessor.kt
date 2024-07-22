@@ -129,7 +129,7 @@ class BCSpringMetadataSymbolProcessor(logSupplier: LogSupplier, private val reso
         metadata.properties += PropertyMetadata(
             name = path,
             defaultValue = defaultValue,
-            type = typeStr.toJavaType(),
+            type = typeStr.toJavaType().removeWildcard(),
             sourceType = propertyDeclaration.canonicalName,
             deprecation = deprecation
         )
@@ -182,4 +182,6 @@ class BCSpringMetadataSymbolProcessor(logSupplier: LogSupplier, private val reso
             this
         }
     }
+
+    private fun String.removeWildcard() = replace("<?>", "")
 }
