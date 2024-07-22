@@ -11,6 +11,9 @@ import io.github.freya022.processor.util.*
 import io.github.freya022.util.LogSupplier
 import io.github.freya022.util.tryAppendDot
 import org.apache.maven.plugin.logging.Log
+import org.intellij.markdown.ast.getTextInNode
+import org.intellij.markdown.flavours.commonmark.CommonMarkFlavourDescriptor
+import org.intellij.markdown.parser.MarkdownParser
 import java.nio.file.Path
 import kotlin.io.path.createParentDirectories
 import kotlin.io.path.readText
@@ -117,6 +120,23 @@ class BCSpringMetadataSymbolProcessor(logSupplier: LogSupplier, private val reso
             .getIfSet("type")
             ?: propertyDeclaration.type.resolveTypedQualifiedName(propertyDeclaration)
 
+        val description = propertyDeclaration.docString?.let { docString ->
+            if (docString.contains("Default: ") && defaultValue == null) {
+                log.warn("Missing default value for ${propertyDeclaration.qualifiedName?.asString()}")
+            }
+
+            val parsedTree = MarkdownParser(CommonMarkFlavourDescriptor()).buildMarkdownTreeFromString(docString)
+            parsedTree.children
+                .asSequence()
+                .map { it.getTextInNode(docString) }
+                .filter { it.isNotBlank() }
+                .map { it.trim() }
+                .filterNot { it.startsWith("Spring property:") }
+                .filterNot { it.startsWith("@") }
+                .joinToString("    ")
+                .tryAppendDot()
+        }
+
         tryPutClassReferenceHint(path, typeStr)
 
         val deprecation = propertyDeclaration.findAnnotationOrNull(deprecatedValueName)?.let { deprecatedValueAnnotation ->
@@ -131,6 +151,7 @@ class BCSpringMetadataSymbolProcessor(logSupplier: LogSupplier, private val reso
             defaultValue = defaultValue,
             type = typeStr.toJavaType().removeWildcard(),
             sourceType = propertyDeclaration.canonicalName,
+            description = description,
             deprecation = deprecation
         )
     }

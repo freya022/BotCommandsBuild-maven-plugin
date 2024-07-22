@@ -17,6 +17,7 @@ class PropertyMetadata(
     val defaultValue: String?,
     val type: String,
     val sourceType: String,
+    val description: String?,
     val deprecation: Deprecation?
 ) {
     class Deprecation(
