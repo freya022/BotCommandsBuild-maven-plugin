@@ -90,13 +90,27 @@ class BCSpringMetadataSymbolProcessor(logSupplier: LogSupplier, private val reso
             configuredProperties += path
         }
 
-        fun KSTypeReference.resolveQualifiedName(from: KSDeclaration): String {
-            return resolve().declaration.qualifiedName?.asString()
-                ?: throw IllegalArgumentException("Unknown type for ${from.qualifiedName?.asString()}: $this")
+        fun KSTypeReference.resolveTypedQualifiedName(from: KSDeclaration): String {
+            val type = resolve()
+            val qualifiedName = type.declaration.qualifiedName?.asString()?.toJavaType()
+                ?: throw IllegalArgumentException("Unknown type for $this in ${from.qualifiedName?.asString()}")
+
+            return when {
+                type.arguments.isNotEmpty() -> {
+                    val argumentsStr = type.arguments.joinToString {
+                        when (it.variance) {
+                            Variance.STAR -> "?"
+                            else -> it.type!!.resolveTypedQualifiedName(from)
+                        }
+                    }
+                    "$qualifiedName<$argumentsStr>"
+                }
+                else -> qualifiedName
+            }
         }
         val typeStr = configurationPropertiesAnnotation
             .getIfSet("type")
-            ?: propertyDeclaration.type.resolveQualifiedName(propertyDeclaration)
+            ?: propertyDeclaration.type.resolveTypedQualifiedName(propertyDeclaration)
 
         val deprecation = propertyDeclaration.findAnnotationOrNull(deprecatedValueName)?.let { deprecatedValueAnnotation ->
             val reason = deprecatedValueAnnotation.getOrDefault<String>("reason").tryAppendDot()
