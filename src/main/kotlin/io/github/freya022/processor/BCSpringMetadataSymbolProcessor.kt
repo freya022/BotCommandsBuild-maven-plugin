@@ -38,6 +38,7 @@ class BCSpringMetadataSymbolProcessor(logSupplier: LogSupplier, private val reso
     private val configurableProperties: MutableSet<String> = hashSetOf()
     private val configuredProperties: MutableSet<String> = hashSetOf()
     private val metadata = SpringMetadata().apply {
+        // Merge handmade metadata
         val resourceMetadata = resourcesPath.resolve("META-INF").resolve("spring-configuration-metadata.json")
             .readText()
             .let { gson.fromJson(it, SpringMetadata::class.java) }
@@ -76,7 +77,7 @@ class BCSpringMetadataSymbolProcessor(logSupplier: LogSupplier, private val reso
     /**
      * Find all properties based on the @ConfigurationProperties prefix + constructor parameter name.
      *
-     * This is used to check that all properties have a @ConfigurationValue assigned and vice-versa
+     * This is used to check that all properties have a @ConfigurationValue assigned and vice versa
      */
     private fun processClassDeclaration(classDeclaration: KSClassDeclaration) {
         val prefix: String = classDeclaration.findAnnotation(configurationPropertiesName).getOrDefault("prefix")
@@ -116,9 +117,13 @@ class BCSpringMetadataSymbolProcessor(logSupplier: LogSupplier, private val reso
                 else -> qualifiedName
             }
         }
-        val typeStr = configurationPropertiesAnnotation
-            .getIfSet("type")
-            ?: propertyDeclaration.type.resolveTypedQualifiedName(propertyDeclaration)
+        // Get the type string if explicitly set, otherwise resolve
+        val typeStr = run {
+            val typeStr = configurationPropertiesAnnotation.getIfSet("type")
+                ?: propertyDeclaration.type.resolveTypedQualifiedName(propertyDeclaration)
+            // Wildcard is invalid for spring metadata, we ignore wildcards for the reference hint too
+            typeStr.replace("<?>", "")
+        }
 
         val description = propertyDeclaration.docString?.let { docString ->
             if (docString.contains("Default: ") && defaultValue == null) {
@@ -133,7 +138,8 @@ class BCSpringMetadataSymbolProcessor(logSupplier: LogSupplier, private val reso
                 .map { it.trim() }
                 .filterNot { it.startsWith("Spring property:") }
                 .filterNot { it.startsWith("@") }
-                .joinToString("    ")
+                .joinToString(" ")
+                .replace("\n", " ") // New lines in paragraph = structural wrapping
                 .tryAppendDot()
         }
 
@@ -149,7 +155,7 @@ class BCSpringMetadataSymbolProcessor(logSupplier: LogSupplier, private val reso
         metadata.properties += PropertyMetadata(
             name = path,
             defaultValue = defaultValue,
-            type = typeStr.toJavaType().removeWildcard(),
+            type = typeStr.toJavaType(),
             sourceType = propertyDeclaration.canonicalName,
             description = description,
             deprecation = deprecation
@@ -163,9 +169,6 @@ class BCSpringMetadataSymbolProcessor(logSupplier: LogSupplier, private val reso
 
         classPattern.matchEntire(typeStr)?.let { matchResult ->
             val classTypeStr = matchResult.groupValues[1]
-            if (classTypeStr == "?")
-                return
-
             metadata.hints += ClassReferenceHint(name, classTypeStr).toMap()
             return
         }
@@ -204,5 +207,4 @@ class BCSpringMetadataSymbolProcessor(logSupplier: LogSupplier, private val reso
         }
     }
 
-    private fun String.removeWildcard() = replace("<?>", "")
 }
