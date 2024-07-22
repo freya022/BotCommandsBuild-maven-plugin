@@ -7,7 +7,6 @@ import org.apache.maven.plugins.annotations.Mojo
 import org.apache.maven.plugins.annotations.Parameter
 import org.apache.maven.project.MavenProject
 import java.io.IOException
-import java.lang.management.ManagementFactory
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
@@ -27,11 +26,6 @@ class GenerateVersionInfoMojo : AbstractMojo() {
     @Throws(MojoFailureException::class)
     override fun execute() {
         try {
-            if (ManagementFactory.getRuntimeMXBean().inputArguments.any { it.startsWith("-agentlib:jdwp") }) {
-                println("Type for debug")
-                readln()
-            }
-
             detectJitpack()
 
             val sourceFile = findSourceFile()
