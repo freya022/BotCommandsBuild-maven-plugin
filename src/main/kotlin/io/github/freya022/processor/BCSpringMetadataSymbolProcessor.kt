@@ -22,6 +22,7 @@ import kotlin.io.path.writeText
 private val configurationPropertiesName = AnnotationName("org.springframework.boot.context.properties", "ConfigurationProperties")
 private val configurationValueName = AnnotationName("io.github.freya022.botcommands.internal.core.config", "ConfigurationValue")
 private val deprecatedValueName = AnnotationName("io.github.freya022.botcommands.internal.core.config", "DeprecatedValue")
+private val ignoreDefaultValueName = AnnotationName("io.github.freya022.botcommands.internal.core.config", "IgnoreDefaultValue")
 
 private val gson = GsonBuilder()
     .setPrettyPrinting()
@@ -126,7 +127,7 @@ class BCSpringMetadataSymbolProcessor(logSupplier: LogSupplier, private val reso
         }
 
         val description = propertyDeclaration.docString?.let { docString ->
-            if (docString.contains("Default: ") && defaultValue == null) {
+            if (docString.contains("Default: ") && defaultValue == null && !propertyDeclaration.isAnnotationPresent(ignoreDefaultValueName)) {
                 log.warn("Missing default value for ${propertyDeclaration.qualifiedName?.asString()}")
             }
 
