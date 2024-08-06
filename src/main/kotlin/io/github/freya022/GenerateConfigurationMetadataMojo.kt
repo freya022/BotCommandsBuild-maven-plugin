@@ -18,7 +18,7 @@ import kotlin.io.path.*
 
 @Mojo(
     name = "generate-configuration-metadata",
-    defaultPhase = LifecyclePhase.GENERATE_SOURCES,
+    defaultPhase = LifecyclePhase.GENERATE_RESOURCES,
     // Required to get dependencies for KSP libraries
     requiresDependencyResolution = ResolutionScope.COMPILE
 )
