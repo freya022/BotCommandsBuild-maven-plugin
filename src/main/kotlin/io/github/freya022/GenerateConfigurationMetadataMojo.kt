@@ -44,8 +44,8 @@ class GenerateConfigurationMetadataMojo : AbstractMojo() {
     @Parameter(required = true)
     lateinit var sourceDirs: List<File>
 
-    private val generatedSourcesPath: Path
-        get() = Path(project.build.directory).resolve("generated-sources")
+    private val targetPath: Path
+        get() = Path(project.build.directory).resolve("classes")
 
     @Throws(MojoFailureException::class)
     override fun execute() {
@@ -72,7 +72,7 @@ class GenerateConfigurationMetadataMojo : AbstractMojo() {
                 listOf(BCSpringMetadataSymbolProcessorProvider(
                     LogSupplier(this),
                     baseDir.toPath().resolve("src").resolve("main").resolve("resources"),
-                    generatedSourcesPath.resolve("META-INF").resolve("additional-spring-configuration-metadata.json")
+                    targetPath.resolve("META-INF").resolve("additional-spring-configuration-metadata.json")
                 )),
                 KspGradleLogger(KspGradleLogger.LOGGING_LEVEL_INFO)
             ).execute()
