@@ -19,6 +19,7 @@ import kotlin.io.path.createParentDirectories
 import kotlin.io.path.readText
 import kotlin.io.path.writeText
 
+private val nameName = AnnotationName("org.springframework.boot.context.properties.bind", "Name")
 private val configurationPropertiesName = AnnotationName("org.springframework.boot.context.properties", "ConfigurationProperties")
 private val configurationValueName = AnnotationName("io.github.freya022.botcommands.internal.core.config", "ConfigurationValue")
 private val deprecatedValueName = AnnotationName("io.github.freya022.botcommands.internal.core.config", "DeprecatedValue")
@@ -82,11 +83,45 @@ class BCSpringMetadataSymbolProcessor(logSupplier: LogSupplier, private val reso
      */
     private fun processClassDeclaration(classDeclaration: KSClassDeclaration) {
         val prefix: String = classDeclaration.findAnnotation(configurationPropertiesName).getOrDefault("prefix")
+        addPropertyBinds(classDeclaration, prefix)
+    }
+
+    /**
+     * Add all constructor parameters as configuration properties,
+     * handle inner classes recursively
+     */
+    private fun addPropertyBinds(classDeclaration: KSClassDeclaration, prefix: String) {
         val constructor = classDeclaration.getDeclaredFunctions().single { it.isConstructor() }
 
-        configurableProperties += constructor.parameters
-            .mapNotNull { it.name?.asString() }
-            .map { "$prefix.$it" }
+        constructor.parameters.forEach { param ->
+            /**
+             * Get the class declaration of [param],
+             * or `null` if the parameter does not represent an inner class of [classDeclaration].
+             */
+            fun getInnerClassOrNull(): KSClassDeclaration? {
+                val paramClassDeclaration = param.type.resolve().declaration as? KSClassDeclaration ?: return null
+
+                val parentDeclaration = paramClassDeclaration.parentDeclaration ?: return null
+                if (parentDeclaration.qualifiedName!!.asString() != classDeclaration.qualifiedName!!.asString()) return null
+
+                return paramClassDeclaration
+            }
+
+            val innerClass = getInnerClassOrNull()
+            val fullBindName = "$prefix.${param.getBindName()}"
+            if (innerClass != null) {
+                addPropertyBinds(innerClass, fullBindName)
+            } else {
+                configurableProperties.add(fullBindName)
+            }
+        }
+    }
+
+    private fun KSValueParameter.getBindName(): String {
+        val nameAnnotation = findAnnotationOrNull(nameName)
+        return nameAnnotation?.getOrDefault("value")
+            ?: this.name?.asString()
+            ?: throw IllegalArgumentException("No name for $this")
     }
 
     private fun processPropertyDeclaration(propertyDeclaration: KSPropertyDeclaration) {
