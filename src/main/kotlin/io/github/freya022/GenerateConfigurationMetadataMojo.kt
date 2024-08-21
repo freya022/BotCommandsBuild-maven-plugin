@@ -65,6 +65,7 @@ class GenerateConfigurationMetadataMojo : AbstractMojo() {
                 resourceOutputDir = File(ksp, "resource-output")
                 sourceRoots = sourceDirs
                 libraries = project.artifacts.map { it.file }
+                jdkHome = File(System.getenv("JAVA_HOME"))
             }.build()
 
             KotlinSymbolProcessing(
