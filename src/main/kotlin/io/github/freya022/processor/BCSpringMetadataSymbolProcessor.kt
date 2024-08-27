@@ -109,7 +109,7 @@ class BCSpringMetadataSymbolProcessor(logSupplier: LogSupplier, private val reso
 
             val innerClass = getInnerClassOrNull()
             val fullBindName = "$prefix.${param.getBindName()}"
-            if (innerClass != null) {
+            if (innerClass != null && innerClass.classKind == ClassKind.CLASS) {
                 addPropertyBinds(innerClass, fullBindName)
             } else {
                 configurableProperties.add(fullBindName)
