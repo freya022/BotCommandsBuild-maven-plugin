@@ -14,7 +14,7 @@ import org.apache.maven.plugins.annotations.ResolutionScope
 import org.apache.maven.project.MavenProject
 import java.io.File
 import java.nio.file.Path
-import kotlin.io.path.*
+import kotlin.io.path.Path
 
 @Mojo(
     name = "generate-configuration-metadata",
@@ -73,7 +73,7 @@ class GenerateConfigurationMetadataMojo : AbstractMojo() {
                 listOf(BCSpringMetadataSymbolProcessorProvider(
                     LogSupplier(this),
                     baseDir.toPath().resolve("src").resolve("main").resolve("resources"),
-                    targetPath.resolve("META-INF").resolve("additional-spring-configuration-metadata.json")
+                    targetPath.resolve("META-INF").resolve("spring-configuration-metadata.json")
                 )),
                 KspGradleLogger(KspGradleLogger.LOGGING_LEVEL_INFO)
             ).execute()
