@@ -16,7 +16,6 @@ import org.intellij.markdown.flavours.commonmark.CommonMarkFlavourDescriptor
 import org.intellij.markdown.parser.MarkdownParser
 import java.nio.file.Path
 import kotlin.io.path.createParentDirectories
-import kotlin.io.path.readText
 import kotlin.io.path.writeText
 
 private val nameName = AnnotationName("org.springframework.boot.context.properties.bind", "Name")
@@ -39,16 +38,7 @@ class BCSpringMetadataSymbolProcessor(logSupplier: LogSupplier, private val reso
 
     private val configurableProperties: MutableSet<String> = hashSetOf()
     private val configuredProperties: MutableSet<String> = hashSetOf()
-    private val metadata = SpringMetadata().apply {
-        // Merge handmade metadata
-        val resourceMetadata = resourcesPath.resolve("META-INF").resolve("spring-configuration-metadata.json")
-            .readText()
-            .let { gson.fromJson(it, SpringMetadata::class.java) }
-
-        groups += resourceMetadata.groups
-        properties += resourceMetadata.properties
-        hints += resourceMetadata.hints
-    }
+    private val metadata = SpringMetadata()
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
         resolver.getSymbolsWithAnnotation(configurationPropertiesName.name, inDepth = false)
